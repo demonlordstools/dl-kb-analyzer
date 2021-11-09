@@ -5,7 +5,6 @@ import moment from 'moment';
 import 'moment/locale/de';
 
 const KB_MAIN_CLASS = 'dl4KBMain';
-const KB_AGGRESSOR_CLASS = 'aggressor';
 const KB_AGGRESSOR_REGEX = /<span class="a(\d+) aggressor"/;
 const KB_DEFENDER_REGEX = /<span class="d(\d+)"/;
 const KB_ROUND_TAG = '<div class="dl4KBRound">';
@@ -152,23 +151,33 @@ export class KbParserService {
                 const startIdx = line.indexOf('<span');
                 const endIdx = line.indexOf('</span>');
                 const attacker = line.substring(startIdx, endIdx);
-                attacker.indexOf(KB_AGGRESSOR_CLASS) === -1
-                    ? this.parseDefender(attacker, line, defenders, roundIndex)
-                    : this.parseAggressor(
-                          attacker,
-                          line,
-                          aggressors,
-                          roundIndex
-                      );
+                if (KB_AGGRESSOR_REGEX.test(attacker)) {
+                    this.parseAttack(
+                        attacker,
+                        CombatRole.AGGRESSOR,
+                        line,
+                        aggressors,
+                        roundIndex
+                    );
+                } else if (KB_DEFENDER_REGEX.test(attacker)) {
+                    this.parseAttack(
+                        attacker,
+                        CombatRole.DEFENDER,
+                        line,
+                        defenders,
+                        roundIndex
+                    );
+                }
             });
         });
-        return Array.from(aggressors.values());
+        return [...aggressors.values(), ...defenders.values()];
     }
 
-    private parseAggressor(
+    private parseAttack(
         attackerHTML: string,
+        attackerCombatRole: CombatRole,
         line: string,
-        aggressors: Map<string, Unit>,
+        units: Map<string, Unit>,
         roundIndex: number
     ) {
         const unitNameNormalized = this.attackerUnitName(attackerHTML);
@@ -178,45 +187,18 @@ export class KbParserService {
         const kills = this.kills(line);
 
         const unit = this.getOrCreateUnit(
-            aggressors,
+            units,
             unitNameNormalized,
             owner,
-            CombatRole.AGGRESSOR
+            attackerCombatRole
         );
-        this.isFriendlyFire(line, CombatRole.AGGRESSOR)
+        this.isFriendlyFire(line, attackerCombatRole)
             ? addFriendlyFire(unit, dmg)
             : addDamage(unit, roundIndex, dmg);
         unit.exp += exp;
         unit.kills += kills;
 
-        aggressors.set(unitNameNormalized, unit);
-    }
-
-    private parseDefender(
-        attackerHTML: string,
-        line: string,
-        defenders: Map<string, Unit>,
-        roundIndex: number
-    ) {
-        const unitNameNormalized = this.attackerUnitName(attackerHTML);
-        const owner = this.owner(attackerHTML);
-        const dmg = this.damage(line);
-        const exp = this.exp(line);
-        const kills = this.kills(line);
-
-        const unit = this.getOrCreateUnit(
-            defenders,
-            unitNameNormalized,
-            owner,
-            CombatRole.DEFENDER
-        );
-        this.isFriendlyFire(line, CombatRole.DEFENDER)
-            ? addFriendlyFire(unit, dmg)
-            : addDamage(unit, roundIndex, dmg);
-        unit.exp += exp;
-        unit.kills += kills;
-
-        defenders.set(unitNameNormalized, unit);
+        units.set(unitNameNormalized, unit);
     }
 
     private getOrCreateUnit(
