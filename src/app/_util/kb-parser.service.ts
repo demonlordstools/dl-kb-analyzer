@@ -1,18 +1,23 @@
 import { Injectable } from '@angular/core';
-import { addDamage, Unit } from '../_model/unit';
+import { addDamage, addFriendlyFire, CombatRole, Unit } from '../_model/unit';
 import { KB } from '../_model/kb';
 import moment from 'moment';
 import 'moment/locale/de';
 
 const KB_MAIN_CLASS = 'dl4KBMain';
 const KB_AGGRESSOR_CLASS = 'aggressor';
+const KB_AGGRESSOR_REGEX = /<span class="a(\d+) aggressor"/;
+const KB_DEFENDER_REGEX = /<span class="d(\d+)"/;
 const KB_ROUND_TAG = '<div class="dl4KBRound">';
 const KB_LINE_TAG = '<div class="dl4KBLine">';
+const KB_KILL_TAG = '<span class="dl4KBKill">';
 const DMG_REGEX = /erleidet (\d*) Schaden/;
 const ATTACKER_NAME_REGEX = /">(.*)/;
+const OWNER_REGEX = /title=".* \((.*)\)">/;
 const DATE_REGEX =
     /Datum des Kampfes<\/span>:<\/th>\s+<td align="left">(.*)<\/td>/;
 const SUBJECT_REGEX = /Betreff<\/span>:<\/th>\s+<td align="left">(.*)<\/td>/;
+const EXP_REGEX = /<span class="ep">(\d+)<\/span>/;
 const STORAGE_KEY = 'kbs';
 
 @Injectable({
@@ -138,35 +143,138 @@ export class KbParserService {
     }
 
     private parseRounds(rounds: Array<string>): Array<Unit> {
-        const units = new Map<string, Unit>();
+        const aggressors = new Map<string, Unit>();
+        const defenders = new Map<string, Unit>();
 
         rounds.forEach((round, roundIndex) => {
             const lines = KbParserService.getLines(round);
             lines.forEach((line) => {
-                console.warn('>>> line:', line);
                 const startIdx = line.indexOf('<span');
                 const endIdx = line.indexOf('</span>');
                 const attacker = line.substring(startIdx, endIdx);
-                if (attacker.indexOf(KB_AGGRESSOR_CLASS) === -1) return;
-
-                const nameMatch = ATTACKER_NAME_REGEX.exec(attacker);
-                const unitName = nameMatch ? nameMatch[1] : 'unknown';
-                const unitNameNormalized =
-                    KbParserService.normalizeUnitName(unitName);
-                const dmgMatch = DMG_REGEX.exec(line);
-                const dmg = dmgMatch ? parseInt(dmgMatch[1]) : 0;
-
-                const unit: Unit = units.get(unitNameNormalized) || {
-                    name: unitNameNormalized,
-                    damage: {
-                        total: 0,
-                        rounds: [],
-                    },
-                };
-                addDamage(unit, roundIndex, dmg);
-                units.set(unitNameNormalized, unit);
+                attacker.indexOf(KB_AGGRESSOR_CLASS) === -1
+                    ? this.parseDefender(attacker, line, defenders, roundIndex)
+                    : this.parseAggressor(
+                          attacker,
+                          line,
+                          aggressors,
+                          roundIndex
+                      );
             });
         });
-        return Array.from(units.values());
+        return Array.from(aggressors.values());
+    }
+
+    private parseAggressor(
+        attackerHTML: string,
+        line: string,
+        aggressors: Map<string, Unit>,
+        roundIndex: number
+    ) {
+        const unitNameNormalized = this.attackerUnitName(attackerHTML);
+        const owner = this.owner(attackerHTML);
+        const dmg = this.damage(line);
+        const exp = this.exp(line);
+        const kills = this.kills(line);
+
+        const unit = this.getOrCreateUnit(
+            aggressors,
+            unitNameNormalized,
+            owner,
+            CombatRole.AGGRESSOR
+        );
+        this.isFriendlyFire(line, CombatRole.AGGRESSOR)
+            ? addFriendlyFire(unit, dmg)
+            : addDamage(unit, roundIndex, dmg);
+        unit.exp += exp;
+        unit.kills += kills;
+
+        aggressors.set(unitNameNormalized, unit);
+    }
+
+    private parseDefender(
+        attackerHTML: string,
+        line: string,
+        defenders: Map<string, Unit>,
+        roundIndex: number
+    ) {
+        const unitNameNormalized = this.attackerUnitName(attackerHTML);
+        const owner = this.owner(attackerHTML);
+        const dmg = this.damage(line);
+        const exp = this.exp(line);
+        const kills = this.kills(line);
+
+        const unit = this.getOrCreateUnit(
+            defenders,
+            unitNameNormalized,
+            owner,
+            CombatRole.DEFENDER
+        );
+        this.isFriendlyFire(line, CombatRole.DEFENDER)
+            ? addFriendlyFire(unit, dmg)
+            : addDamage(unit, roundIndex, dmg);
+        unit.exp += exp;
+        unit.kills += kills;
+
+        defenders.set(unitNameNormalized, unit);
+    }
+
+    private getOrCreateUnit(
+        units: Map<string, Unit>,
+        name: string,
+        owner: string,
+        combatRole: CombatRole
+    ): Unit {
+        return (
+            units.get(name) || {
+                name,
+                owner,
+                combatRole,
+                exp: 0,
+                kills: 0,
+                damage: {
+                    total: 0,
+                    friendlyFire: 0,
+                    rounds: [],
+                },
+            }
+        );
+    }
+
+    private owner(attackerHTML: string): string {
+        const ownerMatch = OWNER_REGEX.exec(attackerHTML);
+        return ownerMatch ? ownerMatch[1] : 'unknown';
+    }
+
+    private attackerUnitName(attackerHTML: string): string {
+        const nameMatch = ATTACKER_NAME_REGEX.exec(attackerHTML);
+        const unitName = nameMatch ? nameMatch[1] : 'unknown';
+        return KbParserService.normalizeUnitName(unitName);
+    }
+
+    private damage(line: string): number {
+        const dmgMatch = DMG_REGEX.exec(line);
+        return dmgMatch ? parseInt(dmgMatch[1]) : 0;
+    }
+
+    private exp(line: string): number {
+        const expMatch = EXP_REGEX.exec(line);
+        return expMatch ? parseInt(expMatch[1]) : 0;
+    }
+
+    private kills(line: string): number {
+        return line.indexOf(KB_KILL_TAG) >= 0 ? 1 : 0;
+    }
+
+    private isFriendlyFire(
+        line: string,
+        attackerCombatRole: CombatRole
+    ): boolean {
+        const attackPart = line.split('</div>')[0];
+        const hitUnitStartIndex = attackPart.lastIndexOf('<span class="');
+        const hitUnit = attackPart.substring(hitUnitStartIndex);
+        return attackerCombatRole === CombatRole.AGGRESSOR
+            ? KB_AGGRESSOR_REGEX.test(hitUnit)
+            : KB_DEFENDER_REGEX.test(hitUnit);
     }
 }

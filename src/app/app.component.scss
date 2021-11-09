@@ -18,12 +18,24 @@
 
     .stored {
         flex: 0 0 350px;
+        width: 350px;
         border-left: 1px solid grey;
         padding: 0 8px;
     }
 
     .analysis {
         flex: 1 1 auto;
+        overflow: scroll;
+
+        table {
+            width: calc(100% - 16px);
+            margin-right: 16px;
+            padding-bottom: 8px;
+        }
+
+        td, th {
+            padding: 0 8px;
+        }
     }
 
     .kb-subject {
@@ -33,4 +45,5 @@
     .kb-date {
         @include typography.use(caption)
     }
+
 }

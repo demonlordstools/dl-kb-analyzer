@@ -3,6 +3,8 @@ import { KbParserService } from './_util/kb-parser.service';
 import { Unit } from './_model/unit';
 import { KB } from './_model/kb';
 
+type FlatUnit = Record<string, string | number>;
+
 @Component({
     selector: 'app-root',
     templateUrl: './app.component.html',
@@ -61,11 +63,15 @@ export class AppComponent {
     }
 }
 
-function flattenUnits(units: Array<Unit>): Array<any> {
+function flattenUnits(units: Array<Unit>): Array<FlatUnit> {
     return units.map((unit) => {
-        const flat: Record<string, unknown> = {
+        const flat: FlatUnit = {
+            owner: unit.owner,
             name: unit.name,
             totalDmg: unit.damage.total,
+            friendlyFire: unit.damage.friendlyFire,
+            kills: unit.kills,
+            exp: unit.exp,
         };
 
         unit.damage.rounds.forEach((dmg, index) => {
