@@ -1,0 +1,36 @@
+@use 'typography';
+
+:host {
+    display: block;
+    padding: 16px;
+
+    .input {
+        width: 100%;
+        height: 100px;
+    }
+
+    .results {
+        margin-top: 24px;
+        display: flex;
+        width: 100%;
+        flex-direction: row;
+    }
+
+    .stored {
+        flex: 0 0 350px;
+        border-left: 1px solid grey;
+        padding: 0 8px;
+    }
+
+    .analysis {
+        flex: 1 1 auto;
+    }
+
+    .kb-subject {
+        @include typography.use(body-2)
+    }
+
+    .kb-date {
+        @include typography.use(caption)
+    }
+}
