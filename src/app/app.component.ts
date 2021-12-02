@@ -1,9 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { KbParserService } from './_util/kb-parser.service';
 import { Unit } from './_model/unit';
 import { KB } from './_model/kb';
-
-type FlatUnit = Record<string, string | number>;
+import { MatSort } from '@angular/material/sort';
+import { FlatUnit } from './_model/flat-unit';
 
 @Component({
     selector: 'app-root',
@@ -11,12 +11,10 @@ type FlatUnit = Record<string, string | number>;
     styleUrls: ['./app.component.scss'],
 })
 export class AppComponent {
-    flattenedUnits: Array<any> = [];
-    dataSource: Array<any> = [];
-
-    columns: Array<any> = [];
-    displayedColumns: Array<any> = [];
+    flattenedUnits: Array<FlatUnit> = [];
     storedKBs: Array<KB> = [];
+
+    @ViewChild(MatSort) sort: MatSort | undefined;
 
     constructor(private kbParser: KbParserService) {
         this.storedKBs = kbParser.storedKBs();
@@ -38,28 +36,6 @@ export class AppComponent {
 
     showKB(kb: KB): void {
         this.flattenedUnits = flattenUnits(kb.units);
-
-        const columnNames = this.flattenedUnits
-            .reduce((columns, row) => {
-                return [...columns, ...Object.keys(row)];
-            }, [])
-            .reduce((columns: Array<string>, column: string) => {
-                return columns.includes(column)
-                    ? columns
-                    : [...columns, column];
-            }, []);
-        this.columns = columnNames.map((column: string) => {
-            return {
-                columnDef: column,
-                header: column,
-                cell: (element: any) =>
-                    `${element[column] ? element[column] : ``}`,
-            };
-        });
-        this.displayedColumns = this.columns.map((c) => c.columnDef);
-        this.dataSource = this.flattenedUnits
-            .slice()
-            .sort((a, b) => b.totalDmg - a.totalDmg);
     }
 }
 

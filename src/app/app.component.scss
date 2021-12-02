@@ -26,16 +26,6 @@
     .analysis {
         flex: 1 1 auto;
         overflow: scroll;
-
-        table {
-            width: calc(100% - 16px);
-            margin-right: 16px;
-            padding-bottom: 8px;
-        }
-
-        td, th {
-            padding: 0 8px;
-        }
     }
 
     .kb-subject {
