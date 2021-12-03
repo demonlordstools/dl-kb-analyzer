@@ -1,5 +1,9 @@
-<h1>Demonlords KB Analyzer</h1>
-
+<div class="header">
+    <h1 class="title">Demonlords KB Analyzer by Skinny</h1>
+    <button [matMenuTriggerFor]="menu" aria-label="Example icon-button with a menu" mat-icon-button>
+        <mat-icon>more_vert</mat-icon>
+    </button>
+</div>
 <textarea #input class="input" placeholder="KB Quelltext"></textarea>
 <button (click)="submit(input.value)" class="submit" color="primary" mat-raised-button>Submit</button>
 
@@ -19,3 +23,15 @@
         </mat-list>
     </div>
 </div>
+
+
+<mat-menu #menu="matMenu">
+    <button (click)="openHelp()" mat-menu-item>
+        <mat-icon>help_outline</mat-icon>
+        <span>Hilfe</span>
+    </button>
+    <button (click)="openAbout()" mat-menu-item>
+        <mat-icon>info</mat-icon>
+        <span>About</span>
+    </button>
+</mat-menu>

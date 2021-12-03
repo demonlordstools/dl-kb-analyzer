@@ -104,44 +104,7 @@ export class KbParserService {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(kbs));
     }
 
-    parse(source: string): KB {
-        const date = KbParserService.parseDate(source);
-        const subject = KbParserService.parseSubject(source);
-        const htmlDoc = this.parser.parseFromString(source, 'text/html');
-        const mains = htmlDoc.getElementsByClassName(KB_MAIN_CLASS);
-        if (mains.length !== 1) {
-            alert('Ungültiger KB');
-            throw 'ungültiger kb';
-        }
-        const main = mains.item(0);
-        const kbHtml = main?.innerHTML || '';
-
-        const allRounds = KbParserService.getRounds(kbHtml);
-        const rounds = KbParserService.filterRounds(
-            allRounds,
-            (header) => header !== '&lt; Kampfvorbereitungen &gt;'
-        );
-
-        const units = this.parseRounds(rounds);
-
-        const kb = {
-            date,
-            subject,
-            units,
-        };
-
-        KbParserService.storeInLocalStorage(kb);
-        return kb;
-    }
-
-    storedKBs(): Array<KB> {
-        const json = localStorage.getItem(STORAGE_KEY) || '{}';
-        const kbsBySubject = JSON.parse(json);
-        const kbs: Array<KB> = Object.values(kbsBySubject);
-        return kbs.sort((a: KB, b: KB) => b.date - a.date);
-    }
-
-    private parseRounds(rounds: Array<string>): Array<Unit> {
+    private static parseRounds(rounds: Array<string>): Array<Unit> {
         const aggressors = new Map<string, Unit>();
         const defenders = new Map<string, Unit>();
 
@@ -152,7 +115,7 @@ export class KbParserService {
                 const endIdx = line.indexOf('</span>');
                 const attacker = line.substring(startIdx, endIdx);
                 if (KB_AGGRESSOR_REGEX.test(attacker)) {
-                    this.parseAttack(
+                    KbParserService.parseAttack(
                         attacker,
                         CombatRole.AGGRESSOR,
                         line,
@@ -160,7 +123,7 @@ export class KbParserService {
                         roundIndex
                     );
                 } else if (KB_DEFENDER_REGEX.test(attacker)) {
-                    this.parseAttack(
+                    KbParserService.parseAttack(
                         attacker,
                         CombatRole.DEFENDER,
                         line,
@@ -173,26 +136,27 @@ export class KbParserService {
         return [...aggressors.values(), ...defenders.values()];
     }
 
-    private parseAttack(
+    private static parseAttack(
         attackerHTML: string,
         attackerCombatRole: CombatRole,
         line: string,
         units: Map<string, Unit>,
         roundIndex: number
     ) {
-        const unitNameNormalized = this.attackerUnitName(attackerHTML);
-        const owner = this.owner(attackerHTML);
-        const dmg = this.damage(line);
-        const exp = this.exp(line);
-        const kills = this.kills(line);
+        const unitNameNormalized =
+            KbParserService.attackerUnitName(attackerHTML);
+        const owner = KbParserService.owner(attackerHTML);
+        const dmg = KbParserService.damage(line);
+        const exp = KbParserService.exp(line);
+        const kills = KbParserService.kills(line);
 
-        const unit = this.getOrCreateUnit(
+        const unit = KbParserService.getOrCreateUnit(
             units,
             unitNameNormalized,
             owner,
             attackerCombatRole
         );
-        this.isFriendlyFire(line, attackerCombatRole)
+        KbParserService.isFriendlyFire(line, attackerCombatRole)
             ? addFriendlyFire(unit, dmg)
             : addDamage(unit, roundIndex, dmg);
         unit.exp += exp;
@@ -201,7 +165,7 @@ export class KbParserService {
         units.set(unitNameNormalized, unit);
     }
 
-    private getOrCreateUnit(
+    private static getOrCreateUnit(
         units: Map<string, Unit>,
         name: string,
         owner: string,
@@ -223,32 +187,32 @@ export class KbParserService {
         );
     }
 
-    private owner(attackerHTML: string): string {
+    private static owner(attackerHTML: string): string {
         const ownerMatch = OWNER_REGEX.exec(attackerHTML);
         return ownerMatch ? ownerMatch[1] : 'unknown';
     }
 
-    private attackerUnitName(attackerHTML: string): string {
+    private static attackerUnitName(attackerHTML: string): string {
         const nameMatch = ATTACKER_NAME_REGEX.exec(attackerHTML);
         const unitName = nameMatch ? nameMatch[1] : 'unknown';
         return KbParserService.normalizeUnitName(unitName);
     }
 
-    private damage(line: string): number {
+    private static damage(line: string): number {
         const dmgMatch = DMG_REGEX.exec(line);
         return dmgMatch ? parseInt(dmgMatch[1]) : 0;
     }
 
-    private exp(line: string): number {
+    private static exp(line: string): number {
         const expMatch = EXP_REGEX.exec(line);
         return expMatch ? parseInt(expMatch[1]) : 0;
     }
 
-    private kills(line: string): number {
+    private static kills(line: string): number {
         return line.indexOf(KB_KILL_TAG) >= 0 ? 1 : 0;
     }
 
-    private isFriendlyFire(
+    private static isFriendlyFire(
         line: string,
         attackerCombatRole: CombatRole
     ): boolean {
@@ -258,5 +222,42 @@ export class KbParserService {
         return attackerCombatRole === CombatRole.AGGRESSOR
             ? KB_AGGRESSOR_REGEX.test(hitUnit)
             : KB_DEFENDER_REGEX.test(hitUnit);
+    }
+
+    parse(source: string): KB {
+        const date = KbParserService.parseDate(source);
+        const subject = KbParserService.parseSubject(source);
+        const htmlDoc = this.parser.parseFromString(source, 'text/html');
+        const mains = htmlDoc.getElementsByClassName(KB_MAIN_CLASS);
+        if (mains.length !== 1) {
+            alert('Ungültiger KB');
+            throw 'ungültiger kb';
+        }
+        const main = mains.item(0);
+        const kbHtml = main?.innerHTML || '';
+
+        const allRounds = KbParserService.getRounds(kbHtml);
+        const rounds = KbParserService.filterRounds(
+            allRounds,
+            (header) => header !== '&lt; Kampfvorbereitungen &gt;'
+        );
+
+        const units = KbParserService.parseRounds(rounds);
+
+        const kb = {
+            date,
+            subject,
+            units,
+        };
+
+        KbParserService.storeInLocalStorage(kb);
+        return kb;
+    }
+
+    storedKBs(): Array<KB> {
+        const json = localStorage.getItem(STORAGE_KEY) || '{}';
+        const kbsBySubject = JSON.parse(json);
+        const kbs: Array<KB> = Object.values(kbsBySubject);
+        return kbs.sort((a: KB, b: KB) => b.date - a.date);
     }
 }

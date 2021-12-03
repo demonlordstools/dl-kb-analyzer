@@ -4,6 +4,9 @@ import { Unit } from './_model/unit';
 import { KB } from './_model/kb';
 import { MatSort } from '@angular/material/sort';
 import { FlatUnit } from './_model/flat-unit';
+import { MatDialog } from '@angular/material/dialog';
+import { HelpDialogComponent } from './_components/help-dialog/help-dialog.component';
+import { AboutDialogComponent } from './_components/about-dialog/about-dialog.component';
 
 @Component({
     selector: 'app-root',
@@ -16,7 +19,7 @@ export class AppComponent {
 
     @ViewChild(MatSort) sort: MatSort | undefined;
 
-    constructor(private kbParser: KbParserService) {
+    constructor(private kbParser: KbParserService, public dialog: MatDialog) {
         this.storedKBs = kbParser.storedKBs();
     }
 
@@ -36,6 +39,14 @@ export class AppComponent {
 
     showKB(kb: KB): void {
         this.flattenedUnits = flattenUnits(kb.units);
+    }
+
+    openHelp() {
+        this.dialog.open(HelpDialogComponent);
+    }
+
+    openAbout() {
+        this.dialog.open(AboutDialogComponent);
     }
 }
 

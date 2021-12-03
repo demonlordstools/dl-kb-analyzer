@@ -12,9 +12,20 @@ import { FormatDatePipe } from './_pipe/format-date.pipe';
 import { AnalysisResultComponent } from './_components/analysis-result/analysis-result.component';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
+import { HelpDialogComponent } from './_components/help-dialog/help-dialog.component';
+import { AboutDialogComponent } from './_components/about-dialog/about-dialog.component';
+import { MatDialogModule } from '@angular/material/dialog';
 
 @NgModule({
-    declarations: [AppComponent, FormatDatePipe, AnalysisResultComponent],
+    declarations: [
+        AppComponent,
+        FormatDatePipe,
+        AnalysisResultComponent,
+        HelpDialogComponent,
+        AboutDialogComponent,
+    ],
     imports: [
         BrowserModule,
         AppRoutingModule,
@@ -25,6 +36,9 @@ import { MatInputModule } from '@angular/material/input';
         MatButtonModule,
         MatFormFieldModule,
         MatInputModule,
+        MatIconModule,
+        MatMenuModule,
+        MatDialogModule,
     ],
     providers: [],
     bootstrap: [AppComponent],

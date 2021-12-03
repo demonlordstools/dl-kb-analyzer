@@ -1,7 +1,7 @@
 <h2>Analyse</h2>
 <mat-form-field appearance="standard">
     <mat-label>Filter</mat-label>
-    <input #input (keyup)="applyFilter($event)" matInput placeholder="Ex. Mia">
+    <input #input (keyup)="applyFilter($event)" matInput placeholder="z.B. Drachenjäger">
 </mat-form-field>
 
 <table [dataSource]="dataSource" mat-table matSort>
