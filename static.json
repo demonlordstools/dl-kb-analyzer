@@ -1,0 +1,4 @@
+{
+    "root": "dist/dl-kb-analyzer",
+    "clean_urls": true
+}
