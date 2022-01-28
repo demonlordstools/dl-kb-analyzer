@@ -55,6 +55,8 @@ function flattenUnits(units: Array<Unit>): Array<FlatUnit> {
         const flat: FlatUnit = {
             owner: unit.owner,
             name: unit.name,
+            receivedDmg: unit.receivedDamage.total,
+            receivedFriendlyFire: unit.receivedDamage.friendlyFire,
             totalDmg: unit.damage.total,
             friendlyFire: unit.damage.friendlyFire,
             kills: unit.kills,
