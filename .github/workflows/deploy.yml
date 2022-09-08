@@ -37,6 +37,9 @@ jobs:
           
       - name: build app    
         run: npm ci && npm run build
+        
+      - name: install rsync
+        run: sudo apt install rsync
 
       - name: Deploy with rsync
         run: rsync -avz -e "ssh -p ${{ secrets.SSH_PORT }}" ./dist/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/html/kampfberichte.dl-tools.de/
