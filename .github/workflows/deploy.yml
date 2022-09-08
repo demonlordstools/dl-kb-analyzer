@@ -28,6 +28,15 @@ jobs:
         with:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           known_hosts: ${{ secrets.KNOWN_HOSTS }}
+          
+      - name: use NodeJs
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+          cache: 'npm'
+          
+      - name: build app    
+        run: npm run build
 
       - name: Deploy with rsync
         run: rsync -avz -e "ssh -p $" ./dist/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/html/kampfberichte.dl-tools.de/
