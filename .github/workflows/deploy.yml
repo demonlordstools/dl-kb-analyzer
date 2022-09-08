@@ -36,7 +36,7 @@ jobs:
           cache: 'npm'
           
       - name: build app    
-        run: npm run build
+        run: npm ci && npm run build
 
       - name: Deploy with rsync
         run: rsync -avz -e "ssh -p $" ./dist/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/html/kampfberichte.dl-tools.de/
