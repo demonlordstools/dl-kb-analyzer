@@ -39,4 +39,4 @@ jobs:
         run: npm ci && npm run build
 
       - name: Deploy with rsync
-        run: rsync -avz -e "ssh -p $" ./dist/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/html/kampfberichte.dl-tools.de/
+        run: rsync -avz -e "ssh -p ${{ secrets.SSH_PORT }}" ./dist/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/html/kampfberichte.dl-tools.de/
